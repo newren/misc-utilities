@@ -1,0 +1,30 @@
+length ()
+{
+    ffprobe -show_entries format=duration -v quiet -of csv=p=0 -i "$FILENAME"
+}
+
+sample ()
+{
+    ffplay -ss $1 -t ${2:-1} -loglevel quiet -nodisp -autoexit "$FILENAME"
+}
+
+clip ()
+{
+    ffmpeg ${2:+-ss $1} -t ${2:-$1} -i "$FILENAME" "$(echo $FILENAME | sed -e 's/\.\([^.]*\)$/.clipped.\1/')" && rm "$FILENAME"
+}
+
+play ()
+{
+    ffplay -autoexit "$(echo $FILENAME | sed -e s/\.[^.]*$//)"*
+}
+
+# Example usage...
+
+ls | grep -v clipped | wc -l
+FILENAME=$(ls | grep -v clipped | head -n 1)
+length; echo $FILENAME
+
+
+sample 227 3
+sample 0 5
+clip 5 223.25  # From 5 to 228.25
