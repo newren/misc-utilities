@@ -13,6 +13,7 @@ import os
 import random
 import select
 import signal
+import string
 import subprocess
 import sys
 import threading
@@ -40,10 +41,49 @@ def terminal_settings():
     termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
 
 def get_keypress_if_any():
+  key = None
   try:
-    return sys.stdin.read(1)
+    key = sys.stdin.read(1)
+    if key != chr(27):
+      return key
+
+    # When escape key is pressed, there are no additional characters to read,
+    # and IOError can be raised, but that is caught below.
+    rest = sys.stdin.read(1)
+
+    # Special multi-character handling for 'Home' and 'End' keys
+    if rest == 'O':
+      return key + rest + sys.stdin.read(1)
+
+    # If the next char isn't '[', we don't know what kind of special multi-
+    # character string it is so just return
+    if rest != '[':
+      return key + rest
+
+    # We need at least one more character
+    rest += sys.stdin.read(1)
+
+    # Special multi-character handling for direction keys
+    if rest[-1] == 'A':
+      return 'Up'
+    elif rest[-1] == 'B':
+      return 'Down'
+    elif rest[-1] == 'C':
+      return 'Right'
+    elif rest[-1] == 'D':
+      return 'Left'
+
+    # Special multi-character handling for 'Insert', 'Delete', 'Page Up',
+    # 'Page Down', 'F$N' (with $N >= 5)
+    if rest[-1] in '0123456789':
+      while rest[-1] in '0123456789':
+        rest += sys.stdin.read(1)
+
+    # Return what we've found.
+    return key + rest
+
   except IOError:
-    return None
+    return key
 
 def play_videos(playlist, c):
   choices = os.listdir('.')
@@ -91,7 +131,9 @@ with terminal_settings():
         c['proc'].send_signal(signal.SIGCONT)
       else:
         c['proc'].send_signal(signal.SIGSTOP)
+    elif all(c in string.printable for c in key) and \
+         key not in ''.join(chr(x) for x in (9, 32, 13, 10)):
+      print("Unhandled key: "+key)
     else:
-      print("Unknown key: '{}' ({})".format(key, hex(ord(key[0]))))
-      if len(key) > 1:
-        raise SystemExit("Somehow got key with length > 1!")
+      key_sequence = '0x'+''.join(hex(ord(x))[2:] for x in key)
+      print("Unknown key escape sequence: '{}' ({})".format(key, key_sequence))
