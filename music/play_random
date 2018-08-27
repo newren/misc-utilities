@@ -89,12 +89,12 @@ def play_videos(playlist, c):
   choices = os.listdir('.')
   bitbucket = open(os.devnull, 'w')
   while True:
-    next = random.choice(choices)
-    nextname = next
+    next_video = random.choice(choices)
+    nextname = next_video
     if len(nextname) > 60:
       nextname = nextname[0:60]+"..."
     print("Playing {}".format(nextname))
-    cmd = ['ffplay', '-nodisp', '-loglevel', 'quiet', '-autoexit', next]
+    cmd = ['ffplay', '-nodisp', '-loglevel', 'quiet', '-autoexit', next_video]
     c['proc'] = subprocess.Popen(cmd, stdout=bitbucket)
     c['proc'].wait()
 
