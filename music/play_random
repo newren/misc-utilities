@@ -6,6 +6,9 @@
 #   #   'q' : quit
 #   #   'n' : go to the next random song
 #   #   'p' : pause/play
+#   #   <Left> : restart the current song at the beginning
+
+from __future__ import print_function
 
 import contextlib
 import fcntl
@@ -87,16 +90,21 @@ def get_keypress_if_any():
 
 def play_videos(playlist, c):
   choices = os.listdir('.')
+  repeat_retcode = -29
   bitbucket = open(os.devnull, 'w')
+  ret, next_video = None, None
   while True:
-    next_video = random.choice(choices)
+    if ret == repeat_retcode:
+      print("Repeat: ", end='')
+    else:
+      next_video = random.choice(choices)
     nextname = next_video
     if len(nextname) > 60:
       nextname = nextname[0:60]+"..."
     print("Playing {}".format(nextname))
     cmd = ['ffplay', '-nodisp', '-loglevel', 'quiet', '-autoexit', next_video]
     c['proc'] = subprocess.Popen(cmd, stdout=bitbucket)
-    c['proc'].wait()
+    ret = c['proc'].wait()
 
 playlist_dir = os.path.join(os.environ['HOME'], 'playlists')
 if not os.path.isdir(playlist_dir):
@@ -131,6 +139,8 @@ with terminal_settings():
         c['proc'].send_signal(signal.SIGCONT)
       else:
         c['proc'].send_signal(signal.SIGSTOP)
+    elif key == 'Left':
+      c['proc'].send_signal(signal.SIGIO)  # Results in -29 retcode it seems
     elif all(c in string.printable for c in key) and \
          key not in ''.join(chr(x) for x in (9, 32, 13, 10)):
       print("Unhandled key: "+key)
