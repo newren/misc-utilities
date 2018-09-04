@@ -124,7 +124,12 @@ with terminal_settings():
   fd = sys.stdin.fileno()
   playing = True
   while True:
-    select.select([fd], [], [])
+    try:
+      select.select([fd], [], [])
+    except KeyboardInterrupt:
+      c['proc'].terminate()
+      print("Quitting (via SIGINT)")
+      sys.exit()
     key = get_keypress_if_any()
     if key.lower() == 'q':
       print("Quitting.")
