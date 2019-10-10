@@ -94,17 +94,20 @@ def play_videos(playlist, c):
   bitbucket = open(os.devnull, 'w')
   ret, next_video = None, None
   while True:
-    if ret == repeat_retcode:
-      print("Repeat: ", end='')
-    else:
-      next_video = random.choice(choices)
-    nextname = next_video
-    if len(nextname) > 60:
-      nextname = nextname[0:60]+"..."
-    print("Playing {}".format(nextname))
-    cmd = ['ffplay', '-nodisp', '-loglevel', 'quiet', '-autoexit', next_video]
-    c['proc'] = subprocess.Popen(cmd, stdout=bitbucket)
-    ret = c['proc'].wait()
+    order = list(choices)
+    random.shuffle(order)
+    while order:
+      if ret == repeat_retcode:
+        print("Repeat: ", end='')
+      else:
+        next_video = order.pop()
+      nextname = next_video
+      if len(nextname) > 60:
+        nextname = nextname[0:60]+"..."
+      print("Playing {}".format(nextname))
+      cmd = ['ffplay', '-nodisp', '-loglevel', 'quiet', '-autoexit', next_video]
+      c['proc'] = subprocess.Popen(cmd, stdout=bitbucket)
+      ret = c['proc'].wait()
 
 playlist_dir = os.path.join(os.environ['HOME'], 'playlists')
 if not os.path.isdir(playlist_dir):
